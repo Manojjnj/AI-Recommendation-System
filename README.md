@@ -7,6 +7,9 @@ A production-grade, full-stack recommendation engine that delivers personalised 
 ## 📸 Screenshots
 
 ```
+![Home](screenshots/screenshot1.png)
+![Home](screenshotsscreenshot2.png)
+![Home](screenshots/screenshot3.png)
 ┌─────────────────────────────────────────────────────────────┐
 │  Home Page  │  Products  │  Dashboard  │  Analytics         │
 ├─────────────┼────────────┼─────────────┼───────────────────┤

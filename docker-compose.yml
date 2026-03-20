@@ -1,0 +1,101 @@
+version: "3.9"
+
+# ── Shared network ───────────────────────────────────────────────
+networks:
+  app_net:
+    driver: bridge
+
+# ── Named volumes ────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  model_cache:
+
+# ════════════════════════════════════════════════════════════════
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: recoai_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB:       ecommerce_rec
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_rec"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Backend ───────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: recoai_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/ecommerce_rec
+      PYTHONPATH: /app
+      LOG_LEVEL: info
+    volumes:
+      - model_cache:/app/model_cache
+      # Hot-reload friendly: mount source in dev
+      # - ./backend:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - app_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── Frontend ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: recoai_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    networks:
+      - app_net
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ── Nginx reverse proxy (production) ─────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: recoai_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - app_net
+    depends_on:
+      - frontend
+      - backend
+    profiles:
+      - production   # Only starts with: docker compose --profile production up

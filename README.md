@@ -8,8 +8,9 @@ A production-grade, full-stack recommendation engine that delivers personalised 
 
 ```
 ![Home](screenshots/screenshot1.png)
-![Home](screenshotsscreenshot2.png)
-![Home](screenshots/screenshot3.png)
+![Dashboard](screenshots/Screenshot2.png)
+![analytics](screenshots/Screenshot3.png)
+
 ┌─────────────────────────────────────────────────────────────┐
 │  Home Page  │  Products  │  Dashboard  │  Analytics         │
 ├─────────────┼────────────┼─────────────┼───────────────────┤
